@@ -60,17 +60,6 @@ export const GoogleSheetsModal: React.FC<GoogleSheetsModalProps> = ({
         token = res.accessToken;
       }
 
-      // If updating an existing spreadsheet, inform the user
-      if (currentId) {
-        const ok = window.confirm(
-          '¿Deseas actualizar tu planilla de Google Sheets existente con los nuevos repasos y puntajes de estudio?'
-        );
-        if (!ok) {
-          setLoading(false);
-          return;
-        }
-      }
-
       const syncResult = await exportToGoogleSheets(
         token,
         attempts,

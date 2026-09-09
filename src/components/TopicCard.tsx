@@ -24,6 +24,7 @@ export const TopicCard: React.FC<TopicCardProps> = ({
   onDeleteAttempt,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const getScoreBadge = () => {
     if (summary.totalReviews === 0) {
@@ -210,17 +211,33 @@ export const TopicCard: React.FC<TopicCardProps> = ({
                 </span>
               </div>
 
-              <button
-                onClick={() => {
-                  if (confirm(`¿Eliminar Repaso ${att.reviewNumber} de ${summary.topicName}?`)) {
-                    onDeleteAttempt(att.id);
-                  }
-                }}
-                title="Eliminar este intento"
-                className="text-slate-400 hover:text-rose-500 p-1 transition-colors"
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
+              {confirmDeleteId === att.id ? (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => {
+                      onDeleteAttempt(att.id);
+                      setConfirmDeleteId(null);
+                    }}
+                    className="px-1.5 py-0.5 bg-rose-600 text-white rounded text-[10px] font-semibold hover:bg-rose-700 transition-colors"
+                  >
+                    ¿Borrar?
+                  </button>
+                  <button
+                    onClick={() => setConfirmDeleteId(null)}
+                    className="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded text-[10px] hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                  >
+                    No
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmDeleteId(att.id)}
+                  title="Eliminar este intento"
+                  className="text-slate-400 hover:text-rose-500 p-1 transition-colors"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
             </div>
           ))}
         </div>

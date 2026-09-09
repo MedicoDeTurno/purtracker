@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, Plus, BookOpen, X } from 'lucide-react';
 import { TopicSummary, Specialty } from '../types';
 import { TopicCard } from './TopicCard';
+import { OFFICIAL_PUR_SPECIALTIES } from '../data/purTopics';
 
 interface TopicListProps {
   topicSummaries: TopicSummary[];
@@ -25,16 +26,7 @@ export const TopicList: React.FC<TopicListProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('urgency');
 
-  const specialtiesList: Specialty[] = [
-    'Medicina Familiar y Comunitaria',
-    'Medicina Interna',
-    'Ginecotología',
-    'Cirugía',
-    'Pediatría',
-    'Psiquiatría',
-    'Medicina Legal',
-    'Bioética',
-  ];
+  const specialtiesList = OFFICIAL_PUR_SPECIALTIES;
 
   const reviewedCount = useMemo(
     () => topicSummaries.filter((t) => t.totalReviews > 0).length,

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Check, ArrowUpRight, TrendingUp, AlertCircle, BookOpen, Calendar, HelpCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { PURTopicDef, ReviewAttempt, Specialty, TopicSummary } from '../types';
-import { OFFICIAL_PUR_TOPICS, SPECIALTY_COLORS } from '../data/purTopics';
+import { OFFICIAL_PUR_TOPICS, OFFICIAL_PUR_SPECIALTIES, SPECIALTY_COLORS } from '../data/purTopics';
 
 interface AddScoreModalProps {
   isOpen: boolean;
@@ -22,7 +22,7 @@ export const AddScoreModal: React.FC<AddScoreModalProps> = ({
   topicSummaries,
 }) => {
   const [selectedSpecialty, setSelectedSpecialty] = useState<Specialty>(
-    initialSpecialty || 'Clínica Médica'
+    initialSpecialty || OFFICIAL_PUR_SPECIALTIES[0]
   );
   const [topicInput, setTopicInput] = useState<string>(initialTopicName || '');
   const [isCustomTopic, setIsCustomTopic] = useState<boolean>(false);
@@ -31,9 +31,11 @@ export const AddScoreModal: React.FC<AddScoreModalProps> = ({
   const [totalQuestions, setTotalQuestions] = useState<number | ''>(30);
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState<string>('');
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   // When opening or prefilled
   useEffect(() => {
+    setValidationError(null);
     if (initialTopicName) {
       setTopicInput(initialTopicName);
       if (initialSpecialty) setSelectedSpecialty(initialSpecialty);
@@ -43,14 +45,14 @@ export const AddScoreModal: React.FC<AddScoreModalProps> = ({
       );
       if (existing) {
         setReviewNumber(existing.totalReviews + 1);
-        // Pre-fill total questions if user usually does 30 or 25
         const lastTotal = existing.latestAttempt?.totalQuestions || 30;
         setTotalQuestions(lastTotal);
+        if (existing.specialty) setSelectedSpecialty(existing.specialty);
       }
     } else {
-      // Default to ITU as a convenient starter if nothing selected
-      if (!topicInput) {
-        setTopicInput('ITU (Infección del Tracto Urinario)');
+      const available = OFFICIAL_PUR_TOPICS.filter((t) => t.specialty === selectedSpecialty);
+      if (available.length > 0 && (!topicInput || !available.some((t) => t.name === topicInput))) {
+        setTopicInput(available[0].name);
       }
     }
   }, [initialTopicName, initialSpecialty, isOpen]);
@@ -65,7 +67,6 @@ export const AddScoreModal: React.FC<AddScoreModalProps> = ({
       setReviewNumber(existing.totalReviews + 1);
       setSelectedSpecialty(existing.specialty);
     } else {
-      // If brand new topic, default to Repaso 1
       setReviewNumber(1);
     }
   }, [topicInput, topicSummaries]);
@@ -85,19 +86,20 @@ export const AddScoreModal: React.FC<AddScoreModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationError(null);
 
     if (!topicInput.trim()) {
-      alert('Por favor indica o selecciona un tema.');
+      setValidationError('Por favor indica o selecciona un tema.');
       return;
     }
 
     if (numTotal <= 0) {
-      alert('El total de preguntas debe ser mayor a cero.');
+      setValidationError('El total de preguntas debe ser mayor a cero.');
       return;
     }
 
     if (numCorrect < 0 || numCorrect > numTotal) {
-      alert('El número de aciertos no puede ser negativo ni mayor al total.');
+      setValidationError('El número de aciertos no puede ser negativo ni mayor al total.');
       return;
     }
 
@@ -131,15 +133,6 @@ export const AddScoreModal: React.FC<AddScoreModalProps> = ({
     onClose();
   };
 
-  const specialtiesList: Specialty[] = [
-    'Clínica Médica',
-    'Cirugía General',
-    'Pediatría',
-    'Tocoginecología',
-    'Salud Pública y Legal',
-    'Especialidades',
-  ];
-
   const filteredTopics = OFFICIAL_PUR_TOPICS.filter(
     (t) => t.specialty === selectedSpecialty
   );
@@ -167,13 +160,20 @@ export const AddScoreModal: React.FC<AddScoreModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {validationError && (
+            <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+              <span>{validationError}</span>
+            </div>
+          )}
+
           {/* Specialty Selector */}
           <div>
             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">
               Especialidad PUR
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {specialtiesList.map((spec) => {
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+              {OFFICIAL_PUR_SPECIALTIES.map((spec) => {
                 const isSelected = selectedSpecialty === spec;
                 return (
                   <button
@@ -181,16 +181,15 @@ export const AddScoreModal: React.FC<AddScoreModalProps> = ({
                     type="button"
                     onClick={() => {
                       setSelectedSpecialty(spec);
-                      // If current topic is not in this specialty, reset topic
-                      const match = OFFICIAL_PUR_TOPICS.find(
-                        (t) => t.name === topicInput && t.specialty === spec
-                      );
-                      if (!match && !isCustomTopic) {
-                        const firstInSpec = OFFICIAL_PUR_TOPICS.find((t) => t.specialty === spec);
-                        if (firstInSpec) setTopicInput(firstInSpec.name);
+                      setValidationError(null);
+                      if (!isCustomTopic) {
+                        const inSpec = OFFICIAL_PUR_TOPICS.filter((t) => t.specialty === spec);
+                        if (inSpec.length > 0) {
+                          setTopicInput(inSpec[0].name);
+                        }
                       }
                     }}
-                    className={`px-3 py-2 text-xs font-medium rounded-lg text-left transition-all border ${
+                    className={`px-2.5 py-1.5 text-[11px] font-medium rounded-lg text-left transition-all border leading-tight ${
                       isSelected
                         ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
                         : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
