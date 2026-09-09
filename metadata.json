@@ -1,0 +1,6 @@
+{
+  "name": "PUR Tracker",
+  "description": "Registro de puntajes por tema y evolución porcentual de repasos para la Prueba Única de Residencias Médicas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
